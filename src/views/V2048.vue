@@ -1,5 +1,5 @@
 <script>
-    import Square2048 from './Square2048.vue';
+    import Square2048 from '../components/2048/Square2048.vue';
 
     export const MIN = 0; /* Minimum x or column index */
     export const MAX = 3; /* Maximum x or column index */
@@ -246,7 +246,7 @@
 </script>
 
 <template>
-    <div class="the2048">
+    <div class="v2048">
         <div class="score">
             Score : {{ score }}
         </div>
@@ -263,14 +263,17 @@
 
 <style scoped>
 
-    .the2048
+    .v2048
     {
+        background-color: hsl(0,0%,10%);
+
+        min-height: 100vh;
+
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         gap: 20px;
-        min-height: 100vh;
     }
 
     .score

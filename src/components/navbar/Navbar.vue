@@ -6,7 +6,6 @@
         data() {
             return {
                 isMobileNavOpen: false,
-                navList: ["home", "chess", "2048"]
             }
         },
         methods: {
@@ -28,10 +27,14 @@
 
         <nav>
             <ul class="nav-ul" :aria-expanded="isMobileNavOpen">
-                <li v-for="(item, index) in navList" :key="index" class="nav-li">
-                    <a href="/">
-                        {{ item }}
-                    </a>
+                <li class="nav-li">
+                    <router-link to="/">Home</router-link>
+                </li>
+                <li class="nav-li">
+                    <router-link to="/chess">Chess</router-link>
+                </li>
+                <li class="nav-li">
+                    <router-link to="/2048">2048</router-link>
                 </li>
             </ul>
         </nav>
@@ -42,11 +45,11 @@
 
     .header
     {
-        background: hsl(0, 0%, 0%);
+        background: hsl(0,0%,10%);
 
         width: 100vw;
 
-        border-bottom: 2px dotted white;
+        border-bottom: 2px dotted hsl(0,0%,95%);
 
         display: flex;
         gap: var(--gap, 3rem);
@@ -78,12 +81,12 @@
 
     .nav-li:hover
     {
-        border-bottom: 3px solid white;
+        border-bottom: 3px solid hsl(0,0%,95%);
     }
 
     .nav-li > a
     {
-        color: white;
+        color: hsl(0,0%,95%);
         text-decoration: none;
     }
 

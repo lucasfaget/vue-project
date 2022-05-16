@@ -1,8 +1,7 @@
 <script>
-    import Navbar from './components/Navbar.vue'
-    import C2048 from './components/C2048.vue'
+    import Navbar from './components/navbar/Navbar.vue'
     export default {
-        components: { Navbar, C2048 },
+        components: { Navbar },
     }
 
 </script>
@@ -10,10 +9,8 @@
 <template>
     <header>
         <Navbar />
+        <router-view></router-view>
     </header>
-    <div>
-        <C2048 />
-    </div>
 </template>
 
 <style>
