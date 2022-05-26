@@ -1,23 +1,21 @@
 <script>
-    export const EMPTY = null;
-
     export default
     {
-        props: ['line', 'col', 'square', 'is-legal'],
+        props: ['col', 'line', 'piece', 'is-legal'],
         computed: {
             empty() {
-                return this.square === EMPTY
+                return this.piece === null
             },
             squareColor() {
                 return this.line % 2 === 0 ? this.col % 2 === 0 ? 'dark-brown' : 'light-brown' : this.col % 2 === 0 ? 'light-brown' : 'dark-brown';
             },
             playerColor() {
-                return this.empty ? '' : this.square.player === 0 ? 'white' : 'black';
+                return this.empty ? '' : this.piece.player === 0 ? 'white' : 'black';
             },
             image()
             {
                 return this.empty ? '' : { 
-                    backgroundImage: 'url(src/assets/chess/' + this.playerColor + '/' + this.square.name + '.svg)',
+                    backgroundImage: 'url(src/assets/chess/' + this.playerColor + '/' + this.piece.name + '.svg)',
                     backgroundRepeat: 'no-repeat',
                     backgroundSize: 'contain',
                 };
