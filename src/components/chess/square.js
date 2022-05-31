@@ -34,4 +34,16 @@ export default class Square
         this.x = this.x0;
         this.y = this.y0;
     }
+    static getIndex(col, line)
+    {
+        return 8*col + line;
+    }
+    static getCol(index)
+    {
+        return Math.trunc(index / 8);
+    }
+    static getLine(index)
+    {
+        return Math.trunc(index % 8);
+    }
 }

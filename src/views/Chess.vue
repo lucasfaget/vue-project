@@ -1,8 +1,14 @@
 <script>
+    import { WHITE } from '../components/chess/board.js'
     import Chessboard from '../components/chess/Chessboard.vue';
 
     export default {
         components: { Chessboard },
+        data() {
+            return {
+                
+            }
+        },
     }
 </script>
 
