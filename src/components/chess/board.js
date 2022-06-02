@@ -1,5 +1,4 @@
 import Square, { WHITE, BLACK, MIN, MAX, INDEXES, COLS, LINES } from './square.js';
-import Move, { DEFAULT, EN_PASSANT, TWO_SQUARE_ADVANCE } from './move.js';
 
 export const EMPTY = null;
 
@@ -29,6 +28,13 @@ export const ROYALTY_SPACES = [ ...BISHOP_SPACES, ...ROOK_SPACES ];
 export const WHITE_EN_PASSANT_LINE = MIN + 4;
 export const BLACK_EN_PASSANT_LINE = MAX - 4;
 
+/* Move types */
+export const DEFAULT = 'D';
+export const EN_PASSANT = 'E.P';
+export const PROMOTION = 'P(Q)';
+export const CASTLING_KINGSIDE = 'O-O';
+export const CASTLING_QUEENSIDE = 'O-O-O';
+
 export default class Board
 {
     constructor()
@@ -54,70 +60,74 @@ export default class Board
         }
     }
 
-    isEmpty(square)
+    isEmpty(squareName)
     {
-        return this.pieces[square] === EMPTY;
+        return this.pieces[squareName] === EMPTY;
     }
-    isCapturable(square, currentPlayer)
+    isCapturable(squareName, currentPlayer)
     {
-        return !this.isEmpty(square) && this.pieces[square].player === 1 - currentPlayer && this.pieces[square].name !== KING;
+        return !this.isEmpty(squareName) && this.pieces[squareName].player === 1 - currentPlayer && this.pieces[squareName].name !== KING;
     }
-    isMovable(square)
+    isMovable(squareName)
     {
-        return !this.isEmpty(square) && Object.keys(this.pieces[square].legalMoves).length !== 0;
+        return !this.isEmpty(squareName) && Object.keys(this.pieces[squareName].legalMoves).length !== 0;
     }
     isLegal(from, to)
     {
         return this.pieces[from].legalMoves[to] !== undefined;
     }
 
-    isOccupiedBy(square, player, name)
+    isOccupiedBy(squareName, player, name)
     {
-        return !this.isEmpty(square) && this.pieces[square].name === name && this.pieces[square].player === player;
+        return !this.isEmpty(squareName) && this.pieces[squareName].name === name && this.pieces[squareName].player === player;
     }
 
-    findPieceSquare(player, name)
+    findPieceSquareName(player, name)
     {
-        for (const square in this.pieces)
+        for (const squareName in this.pieces)
         {
-            if (!this.isEmpty(square) && this.pieces[square].name === name && this.pieces[square].player === player)
+            if (!this.isEmpty(squareName) && this.pieces[squareName].name === name && this.pieces[squareName].player === player)
             {
-                return square;
+                return squareName;
             }
         }
 
         return undefined;
     }
-    // getMoveType(from, to)
-    // {
-    //     return this.moves[from].legalMoves[to];
-    // }
-
-    recordLegalMove(move)
+    getMoveName(from, to)
     {
-        this.pieces[move.from.getSquare()].legalMoves[move.to.getSquare()] = move.moveType;
+        return this.pieces[from].legalMoves[to];
     }
-    move(move, moveType = DEFAULT)
+
+    recordLegalMove(from, to, moveName = DEFAULT)
     {
-        move.moveType = moveType;
-        move.capturedPiece = this.pieces[move.to.getSquare()]
+        this.pieces[from].legalMoves[to] = moveName;
+    }
+    move(from, to, moveName = DEFAULT)
+    { 
+        /* Save move data */
+        let move = {
+            from: from,
+            to: to,
+            moveName: moveName,
+            capturedPiece: this.pieces[to]
+        }
+
         /* Update chessboard */
-        this.pieces[move.to.getSquare()] = this.pieces[move.from.getSquare()];
-        this.pieces[move.to.getSquare()].moveCount++;
-        this.pieces[move.from.getSquare()] = EMPTY;
-        /* Save move date */
+        this.pieces[move.to] = this.pieces[move.from];
+        this.pieces[move.to].moveCount++;
+        this.pieces[move.from] = EMPTY;
+
         this.moves.push(move);
     }
     cancelLastMove()
     {
         let move = this.moves.pop();
-        if (move !== undefined)
-        {
-            /* Update chessboard */
-            this.pieces[move.from.getSquare()] = this.pieces[move.to.getSquare()];
-            this.pieces[move.from.getSquare()].moveCount--;
-            this.pieces[move.to.getSquare()] = move.capturedPiece;
-        }
+
+        /* Update chessboard */
+        this.pieces[move.from] = this.pieces[move.to];
+        this.pieces[move.from].moveCount--;
+        this.pieces[move.to] = move.capturedPiece;
     }
     resetLegalMoves()
     {
@@ -129,9 +139,9 @@ export default class Board
             }
         }
     }
-    isCheckedIfMoving(player, move, moveType = DEFAULT)
+    isCheckedIfMoving(player, square, moveName = DEFAULT)
     {
-        this.move(move, moveType);
+        this.move(square, moveName);
         let isChecked = this.isChecked(player);
         this.cancelLastMove();
 
@@ -142,107 +152,107 @@ export default class Board
     {
         this.resetLegalMoves();
 
-        for (const [square, piece] of Object.entries(this.pieces))
+        for (const [squareName, piece] of Object.entries(this.pieces))
         {
             if (piece !== EMPTY)
             {
                 if (piece.player === player)
                 {
-                    let move = new Move(Square.getColIndex(square), Square.getLineIndex(square));
+                    let square = new Square(Square.getColIndex(squareName), Square.getLineIndex(squareName));
 
                     if (piece.name === PAWN)
                     {
                         /* Testing move forward */
                         let space = player === WHITE ? UP : DOWN;
                         /* Once */
-                        if (move.moveOneSpace(space) && this.isEmpty(move.to.getSquare()))
+                        if (square.moveOneSpace(space) && this.isEmpty(square.getName()))
                         {
-                            if (!this.isCheckedIfMoving(player, move))
+                            if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                             {
-                                this.recordLegalMove(move)
+                                this.recordLegalMove(squareName, square.getName());
                             }
 
                             /* Twice */
-                            if (this.pieces[move.from.getSquare()].moveCount === 0)
+                            if (this.pieces[squareName].moveCount === 0)
                             {
-                                if (move.moveOneSpace(space) && this.isEmpty(move.to.getSquare()))
+                                if (square.moveOneSpace(space) && this.isEmpty(square.getName()))
                                 {
-                                    if (!this.isCheckedIfMoving(player, move, TWO_SQUARE_ADVANCE))
+                                    if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                                     {
-                                        this.recordLegalMove(move, TWO_SQUARE_ADVANCE)
+                                        this.recordLegalMove(squareName, square.getName());
                                     }
                                 }
                             }
                         }
-                        move.goToOrigin();
+                        square.goToOrigin();
 
                         /* Testing diagonal capture */
                         let spaces = player === WHITE ? [UP_LEFT, UP_RIGHT] : [DOWN_LEFT, DOWN_RIGHT];
                         spaces.forEach((space) => {
-                            if (move.moveOneSpace(space) && this.isCapturable(move.to.getSquare(), player))
+                            if (square.moveOneSpace(space) && this.isCapturable(square.getName(), player))
                             {
-                                if (!this.isCheckedIfMoving(player, move))
+                                if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                                 {
-                                    this.recordLegalMove(move);
+                                    this.recordLegalMove(squareName, square.getName());
                                 }
                             }
-                            move.goToOrigin();
+                            square.goToOrigin();
                         });
 
                         /* Testing en passant capture */
                         let enPassantLine = player === WHITE ? WHITE_EN_PASSANT_LINE : BLACK_EN_PASSANT_LINE;
-                        if (move.x === enPassantLine)
+                        if (square.x0 === enPassantLine)
                         {
                             for (const space of [LEFT, RIGHT])
                             {
-                                if (move.moveOneSpace(space) && 
-                                    this.moves[this.moves.length-1].moveType === TWO_SQUARE_ADVANCE && 
-                                    this.moves[this.moves.length-1].to.getSquare() === move.to.getSquare() && 
-                                    this.isOccupiedBy(move.to.getSquare(), 1-player, PAWN))
+                                if (square.moveOneSpace(space) &&
+                                    this.isOccupiedBy(square.getName(), 1-player, PAWN) &&
+                                    this.pieces[square.getName()].moveCount === 1 &&
+                                    this.moves[this.moves.length-1].to === square.getName())
                                 {
-                                    move.moveOneSpace(UP);
-                                    if (this.isEmpty(move.to.getSquare()))
+                                    square.moveOneSpace(UP);
+                                    if (this.isEmpty(square.getName()))
                                     {
-                                        if (!this.isCheckedIfMoving(player, move, EN_PASSANT))
+                                        if (!this.isCheckedIfMoving(player, squareName, square.getName(), EN_PASSANT))
                                         {
-                                            this.recordLegalMove(move, EN_PASSANT);
+                                            this.recordLegalMove(squareName, square.getName(), EN_PASSANT);
                                         }
                                     } 
                                 }
-                                move.goToOrigin();
+                                square.goToOrigin();
                             }
                         }        
                     }
                     else if (piece.name === KNIGHT)
                     {
                         KNIGHT_SPACES.forEach((space => {
-                            if (move.moveOneSpace(space))
+                            if (square.moveOneSpace(space))
                             {
-                                if (this.isEmpty(move.to.getSquare()) || this.isCapturable(move.to.getSquare(), player))
+                                if (this.isEmpty(square.getName()) || this.isCapturable(square.getName(), player))
                                 {
-                                    if (!this.isCheckedIfMoving(player, move))
+                                    if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                                     {
-                                        this.recordLegalMove(move)
+                                        this.recordLegalMove(squareName, square.getName());
                                     }
                                 }
                             }
-                            move.goToOrigin();
+                            square.goToOrigin();
                         })); 
                     }
                     else if (piece.name === KING)
                     {
                         ROYALTY_SPACES.forEach((space => {
-                            if (move.moveOneSpace(space))
+                            if (square.moveOneSpace(space))
                             {
-                                if (this.isEmpty(move.to.getSquare()) || this.isCapturable(move.to.getSquare(), player))
+                                if (this.isEmpty(square.getName()) || this.isCapturable(square.getName(), player))
                                 {
-                                    if (!this.isCheckedIfMoving(player, move))
+                                    if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                                     {
-                                        this.recordLegalMove(move)
+                                        this.recordLegalMove(squareName, square.getName());
                                     }
                                 }
                             }
-                            move.goToOrigin();
+                            square.goToOrigin();
                         }));
                     }
                     else
@@ -261,28 +271,28 @@ export default class Board
                                 break;
                         }
                         spaces.forEach((space => {
-                            while (move.moveOneSpace(space))
+                            while (square.moveOneSpace(space))
                             {
-                                if (this.isEmpty(move.to.getSquare()))
+                                if (this.isEmpty(square.getName()))
                                 {
-                                    if (!this.isCheckedIfMoving(player, move))
+                                    if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                                     {
-                                        this.recordLegalMove(move)
+                                        this.recordLegalMove(squareName, square.getName())
                                     }
                                 }
                                 else
                                 {
-                                    if (this.isCapturable(move.to.getSquare(), player))
+                                    if (this.isCapturable(square.getName(), player))
                                     {
-                                        if (!this.isCheckedIfMoving(player, move))
+                                        if (!this.isCheckedIfMoving(player, squareName, square.getName()))
                                         {
-                                            this.recordLegalMove(move)
+                                            this.recordLegalMove(squareName, square.getName())
                                         }
                                     }
                                     break;
                                 }
                             }
-                            move.goToOrigin();
+                            square.goToOrigin();
                         }));
                     }
                 }            
@@ -293,68 +303,62 @@ export default class Board
     isChecked(player)
     {
         /* Locate the king */
-        let kingSquare = this.findPieceSquare(player, KING);
+        let kingSquare = this.findPieceSquareName(player, KING);
 
-        let move = new Move(Square.getColIndex(kingSquare), Square.getLineIndex(kingSquare));
+        let square = new Square(Square.getColIndex(kingSquare), Square.getLineIndex(kingSquare));
 
         /* Test if the player is checked by a pawn or a pawn */
         let spaces = player === WHITE ? [UP_LEFT, UP_RIGHT] : [DOWN_LEFT, DOWN_RIGHT];
         for (const space of spaces)
         {
-            if (move.moveOneSpace(space) && this.isOccupiedBy(move.to.getSquare(), 1-player, PAWN))
+            if (square.moveOneSpace(space) && this.isOccupiedBy(square.getName(), 1-player, PAWN))
             {
-                console.log('check by pawn');
                 return true;
             }
-            move.goToOrigin();
+            square.goToOrigin();
         }
 
         /* Test if the player is checked by a knight */
         for (const space of KNIGHT_SPACES)
         {
-            if (move.moveOneSpace(space) && this.isOccupiedBy(move.to.getSquare(), 1-player, KNIGHT))
+            if (square.moveOneSpace(space) && this.isOccupiedBy(square.getName(), 1-player, KNIGHT))
             {
-                console.log('check by knight');
                 return true;
             }
-            move.goToOrigin();
+            square.goToOrigin();
         }
 
         /* Test if the player is checked by a bishop or a rook or a queen or a king */
         for (const space of ROYALTY_SPACES)
         {
             let spaceNumber = 1;
-            while(move.moveOneSpace(space))
+            while(square.moveOneSpace(space))
             {
-                if (!this.isEmpty(move.to.getSquare()))
+                if (!this.isEmpty(square.getName()))
                 {
-                    if (this.pieces[move.to.getSquare()].player === 1 - player)
+                    if (this.pieces[square.getName()].player === 1 - player)
                     {
-                        if (this.pieces[move.to.getSquare()].name === QUEEN)
+                        if (this.pieces[square.getName()].name === QUEEN)
                         {
-                            console.log('check by queen');
                             return true;
                         }
-                        else if (spaceNumber === 1 && this.pieces[move.to.getSquare()].name === KING)
+                        else if (spaceNumber === 1 && this.pieces[square.getName()].name === KING)
                         {
-                            console.log('check by king');
                             return true;
                         }
                         else
                         {
                             if (space.y === 0 || space.x === 0)
                             {
-                                if (this.pieces[move.to.getSquare()].name === ROOK)
+                                if (this.pieces[square.getName()].name === ROOK)
                                 {
-                                    console.log('check by rook');
                                     return true;
                                 }
                             }
                             else
                             {
-                                if (this.pieces[move.to.getSquare()].name === BISHOP)
+                                if (this.pieces[square.getName()].name === BISHOP)
                                 {
-                                    console.log('check by bishop');
                                     return true;
                                 }
                             }
@@ -364,7 +368,7 @@ export default class Board
                 }
                 spaceNumber++;
             }
-            move.goToOrigin();
+            square.goToOrigin();
         }
 
         return false;

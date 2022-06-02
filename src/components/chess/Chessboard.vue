@@ -1,6 +1,5 @@
 <script>
     import Square, { WHITE, BLACK, COLS, LINES } from './square.js';
-    import Move from './move.js';
     import Board from './board.js';
     import ChessSquare from './ChessSquare.vue';
 
@@ -12,7 +11,10 @@
                 cols: [...COLS],
                 lines: [...LINES].reverse(),
                 chessboard: new Board(),
-                currentMove: null
+                currentMove: {
+                    from: null,
+                    to: null,
+                }
             }
         },
         computed: {
@@ -39,39 +41,35 @@
         methods: {
             move()
             {
-                this.chessboard.move(this.currentMove);
+                this.chessboard.move(this.currentMove.from, this.currentMove.to, this.chessboard.getMoveName(this.currentMove.from, this.currentMove.to));
+                this.currentMove.to = null;
                 this.chessboard.calculateAllMoves(this.currentPlayer);
             },
             isLegalSquare(square)
             {
-                return this.currentMove !== null && this.chessboard.isLegal(this.currentMove.from.getSquare(), square);
+                return this.currentMove.from !== null && this.chessboard.isLegal(this.currentMove.from, square);
             },
             clickSquare(square)
             {
                 if (this.chessboard.isMovable(square))
                 {
-                    if (this.currentMove !== null && this.currentMove.from.getSquare() === square)
+                    if (this.currentMove.from === square)
                     {
-                        this.currentMove === null;
+                        this.currentMove.from = null;
                     }
                     else
                     {
-                        let col = Square.getColIndex(square);
-                        let line = Square.getLineIndex(square);
-                        this.currentMove = new Move(col, line);
+                        this.currentMove.from = square;
                     }
                 }
                 else
                 {
-                    if (this.currentMove !== null && this.chessboard.isLegal(this.currentMove.from.getSquare(), square))
+                    if (this.currentMove.from !== null && this.chessboard.isLegal(this.currentMove.from, square))
                     {
-                        let col = Square.getColIndex(square);
-                        let line = Square.getLineIndex(square);
-                        this.currentMove.setTo(col, line);
-
+                        this.currentMove.to = square;
                         this.move();
                     }
-                    this.currentMove = null;
+                    this.currentMove.from = null;
                 }
             }
         }
