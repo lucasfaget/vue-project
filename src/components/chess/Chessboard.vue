@@ -1,6 +1,7 @@
 <script>
-    import Square, { MIN, MAX } from './square.js';
-    import Board, { INDEXES, WHITE, BLACK } from './board.js';
+    import Square, { WHITE, BLACK, COLS, LINES } from './square.js';
+    import Move from './move.js';
+    import Board from './board.js';
     import ChessSquare from './ChessSquare.vue';
 
     export default
@@ -8,18 +9,27 @@
         components: { ChessSquare },
         data() {
             return {
-                cols: [...INDEXES],
-                lines: [...INDEXES].reverse(),
+                cols: [...COLS],
+                lines: [...LINES].reverse(),
                 chessboard: new Board(),
-                from: null
+                currentMove: null
             }
         },
         computed: {
-            moveNumber() {
+            squaresArray() {
+                let squaresArray = [];
+                for (const line of this.lines) {
+                    for (const col of this.cols) {
+                        squaresArray.push(col + line);
+                    }
+                }
+                return squaresArray;
+            },
+            moveCount() {
                 return this.chessboard.moves.length;
             },
             currentPlayer() {
-                return this.moveNumber % 2 === 0 ? WHITE : BLACK;
+                return this.moveCount % 2 === 0 ? WHITE : BLACK;
             }
         },
         mounted() {
@@ -27,44 +37,41 @@
             console.log(this.chessboard)
         },
         methods: {
-            getIndex(col, line)
+            move()
             {
-                return 8*col + line;
-            },
-            isLegalSquare(index)
-            {
-                return this.from !== null && this.chessboard.isLegalMove(this.from, index);
-            },
-
-            cancelLastMove()
-            {
-                this.chessboard.cancelLastMove();
+                this.chessboard.move(this.currentMove);
                 this.chessboard.calculateAllMoves(this.currentPlayer);
             },
-
-            clickSquare(index)
+            isLegalSquare(square)
             {
-                if (this.chessboard.isMovable(index))
+                return this.currentMove !== null && this.chessboard.isLegal(this.currentMove.from.getSquare(), square);
+            },
+            clickSquare(square)
+            {
+                if (this.chessboard.isMovable(square))
                 {
-                    if (this.from === index)
+                    if (this.currentMove !== null && this.currentMove.from.getSquare() === square)
                     {
-                        this.from = null;
+                        this.currentMove === null;
                     }
                     else
                     {
-                        this.from = index;
+                        let col = Square.getColIndex(square);
+                        let line = Square.getLineIndex(square);
+                        this.currentMove = new Move(col, line);
                     }
                 }
                 else
                 {
-                    if (this.isLegalSquare(index))
+                    if (this.currentMove !== null && this.chessboard.isLegal(this.currentMove.from.getSquare(), square))
                     {
-                        this.chessboard.move(this.from, index, this.chessboard.getMoveType(this.from, index));
-                        this.chessboard.calculateAllMoves(this.currentPlayer);
+                        let col = Square.getColIndex(square);
+                        let line = Square.getLineIndex(square);
+                        this.currentMove.setTo(col, line);
 
-                        console.log(this.chessboard)
+                        this.move();
                     }
-                    this.from = null;
+                    this.currentMove = null;
                 }
             }
         }
@@ -73,12 +80,9 @@
 
 <template>
     <div class="chessboard">
-        <template v-for="line in lines">
-            <template v-for="col in cols" :key="getIndex(col, line)">
-                <ChessSquare :col="col" :line="line" :piece="chessboard.squares[getIndex(col, line)]" :is-legal="isLegalSquare(getIndex(col, line))" @click="clickSquare(getIndex(col, line))"/>
-            </template>
+        <template v-for="square in squaresArray" :key="square">
+            <ChessSquare :square="square" :piece="chessboard.pieces[square]" :is-legal="isLegalSquare(square)" @click="clickSquare(square)"/>
         </template>
-        <button @click="cancelLastMove">Cancel move</button>
     </div>
 </template>
 

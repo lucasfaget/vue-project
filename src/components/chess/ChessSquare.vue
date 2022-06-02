@@ -1,18 +1,20 @@
 <script>
+    import Square from './square.js';
+
     export default
     {
-        props: ['col', 'line', 'piece', 'is-legal'],
+        props: ['square', 'piece', 'is-legal'],
         computed: {
             empty() {
                 return this.piece === null
             },
             squareColor() {
-                return this.line % 2 === 0 ? this.col % 2 === 0 ? 'dark-brown' : 'light-brown' : this.col % 2 === 0 ? 'light-brown' : 'dark-brown';
+                return Square.getColIndex(this.square) % 2 === 0 ? Square.getLineIndex(this.square) % 2 === 0 ? 'dark-brown' : 'light-brown' : Square.getLineIndex(this.square) % 2 === 0 ? 'light-brown' : 'dark-brown';
             },
             playerColor() {
                 return this.empty ? '' : this.piece.player === 0 ? 'white' : 'black';
             },
-            image()
+            pieceImage()
             {
                 return this.empty ? '' : { 
                     backgroundImage: 'url(src/assets/chess/' + this.playerColor + '/' + this.piece.name + '.svg)',
@@ -26,8 +28,8 @@
 
 <template>
     <div class="square" :class="[{ 'is-legal': isLegal }, squareColor]">
-        <div class="image" :style="image" draggable="true">
-            {{ 8*col + line }}
+        <div class="image" :style="pieceImage" draggable="true">
+            {{ square }}
         </div>
     </div>
 </template>
