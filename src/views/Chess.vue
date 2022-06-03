@@ -1,20 +1,60 @@
 <script>
     import Chessboard from '../components/chess/Chessboard.vue';
+    import ChessButton from '../components/chess/ChessButton.vue';
+
+    export const SPIN = 'spin';
+    export const FIRST = 'first';
+    export const PREVIOUS = 'previous';
+    export const NEXT = 'next';
+    export const LAST = 'last';
+    export const BACK = 'back';
 
     export default {
-        components: { Chessboard },
+        components: { Chessboard, ChessButton },
         data() {
             return {
-                
+                isSpun: false,
+                buttons: [
+                    { buttonType: SPIN, tooltipText: "Spin chessboard" },
+                    { buttonType: FIRST, tooltipText: "First move" },
+                    { buttonType: PREVIOUS, tooltipText: "Previous move" },
+                    { buttonType: NEXT, tooltipText: "Next move" },
+                    { buttonType: LAST, tooltipText: "Last move" },
+                    { buttonType: BACK, tooltipText: "Cancel move" }
+                ]
             }
         },
+        methods: {
+            clickButton(buttonType) {
+                switch (buttonType)
+                {
+                    case SPIN:
+                        this.$refs.chessboard.spin();
+                        break;
+                    case FIRST:
+                        break;
+                    case PREVIOUS:
+                        break;
+                    case NEXT:
+                        break;
+                    case LAST:
+                        break;  
+                    case BACK:
+                        this.$refs.chessboard.cancelLastMove();
+                        break;
+                }
+            }
+        }
     }
 </script>
 
 <template>
     <div class="chess">
-        <div clas="main">
-            <Chessboard />
+        <div class="buttons">
+            <ChessButton v-for="button in buttons" :key="button.buttonType" :buttonType="button.buttonType" :tooltipText="button.tooltipText" @click="clickButton(button.buttonType)"/>
+        </div>
+        <div>
+            <Chessboard ref="chessboard"/>
         </div>
     </div>
 </template>
@@ -26,8 +66,21 @@
 
         min-height: 100vh;
 
+        padding-top: 30px;
+
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+    }
+
+    .buttons
+    {
+        background-color: hsl(0,0%,95%);
+
+        width: 36rem;
+
+        display: flex;
+        justify-content: center;
     }
 </style>

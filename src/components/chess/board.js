@@ -154,7 +154,6 @@ export default class Board
     cancelLastMove()
     {
         let move = this.moves.pop();
-
         /* Update chessboard */
         this.pieces[move.from] = this.pieces[move.to];
         this.pieces[move.from].moveCount--;

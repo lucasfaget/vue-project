@@ -1,16 +1,18 @@
 <script>
-    import Square, { WHITE, BLACK, COLS, LINES } from './square.js';
+    import { WHITE, BLACK, COLS, LINES } from './square.js';
     import Board from './board.js';
     import ChessSquare from './ChessSquare.vue';
+
+    export const REVERSE_COLS = [...COLS].reverse();
+    export const REVERSE_LINES = [...LINES].reverse();
 
     export default
     {
         components: { ChessSquare },
         data() {
             return {
-                cols: [...COLS],
-                lines: [...LINES].reverse(),
-                chessboard: new Board(),
+                board: new Board(),
+                isSpun: false,
                 currentMove: {
                     from: null,
                     to: null,
@@ -18,6 +20,13 @@
             }
         },
         computed: {
+            cols() {
+                return !this.isSpun ? COLS : REVERSE_COLS; 
+            },
+            lines()
+            {
+                return !this.isSpun ? REVERSE_LINES : LINES;
+            },
             squaresArray() {
                 let squaresArray = [];
                 for (const line of this.lines) {
@@ -28,31 +37,48 @@
                 return squaresArray;
             },
             moveCount() {
-                return this.chessboard.moves.length;
+                return this.board.moves.length;
             },
             currentPlayer() {
                 return this.moveCount % 2 === 0 ? WHITE : BLACK;
             }
         },
         mounted() {
-            this.chessboard.calculateAllMoves(this.currentPlayer);
-            console.log(this.chessboard)
+            this.board.calculateAllMoves(this.currentPlayer);
+            console.log(this.board)
         },
         methods: {
+            spin()
+            {
+                this.isSpun = !this.isSpun;
+            },
+            goToAnotherMove()
+            {
+
+            },
+
             move()
             {
-                this.chessboard.move(this.currentMove.from, this.currentMove.to, this.chessboard.getMoveName(this.currentMove.from, this.currentMove.to));
+                this.board.move(this.currentMove.from, this.currentMove.to, this.board.getMoveName(this.currentMove.from, this.currentMove.to));
                 this.currentMove.to = null;
-                this.chessboard.calculateAllMoves(this.currentPlayer);
-                console.log(this.chessboard);
+                this.board.calculateAllMoves(this.currentPlayer);
             },
+            cancelLastMove()
+            {
+                if (this.moveCount > 0)
+                {
+                    this.board.cancelLastMove();
+                    this.board.calculateAllMoves(this.currentPlayer);
+                }
+            },
+
             isLegalSquare(square)
             {
-                return this.currentMove.from !== null && this.chessboard.isLegal(this.currentMove.from, square);
+                return this.currentMove.from !== null && this.board.isLegal(this.currentMove.from, square);
             },
             clickSquare(square)
             {
-                if (this.chessboard.isMovable(square))
+                if (this.board.isMovable(square))
                 {
                     if (this.currentMove.from === square)
                     {
@@ -65,7 +91,7 @@
                 }
                 else
                 {
-                    if (this.currentMove.from !== null && this.chessboard.isLegal(this.currentMove.from, square))
+                    if (this.currentMove.from !== null && this.board.isLegal(this.currentMove.from, square))
                     {
                         this.currentMove.to = square;
                         this.move();
@@ -80,7 +106,7 @@
 <template>
     <div class="chessboard">
         <template v-for="square in squaresArray" :key="square">
-            <ChessSquare :square="square" :piece="chessboard.pieces[square]" :is-legal="isLegalSquare(square)" @click="clickSquare(square)"/>
+            <ChessSquare :square="square" :piece="board.pieces[square]" :is-legal="isLegalSquare(square)" @click="clickSquare(square)" />
         </template>
     </div>
 </template>
