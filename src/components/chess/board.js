@@ -25,8 +25,13 @@ export const BISHOP_SPACES = [ UP_LEFT, UP_RIGHT, DOWN_LEFT , DOWN_RIGHT ];
 export const ROOK_SPACES = [ UP, RIGHT, DOWN, LEFT ];
 export const ROYALTY_SPACES = [ ...BISHOP_SPACES, ...ROOK_SPACES ];
 
-export const WHITE_EN_PASSANT_LINE = MIN + 4;
-export const BLACK_EN_PASSANT_LINE = MAX - 4;
+export const PROMOTION_LINE = [MAX, MIN];
+export const EN_PASSANT_LINE = [MIN + 4, MAX - 4];
+export const KING_SQUARE = ['e1', 'e8'];
+export const KING_ROOK = ['h1', 'h8'];
+export const CASTLING_KING_ROOK = ['f1', 'f8'];
+export const QUEEN_ROOK = ['a1', 'a8'];
+export const CASTLING_QUEEN_ROOK = ['d1', 'd8'];
 
 /* Move types */
 export const DEFAULT = 'D';
@@ -67,6 +72,10 @@ export default class Board
     isCapturable(squareName, currentPlayer)
     {
         return !this.isEmpty(squareName) && this.pieces[squareName].player === 1 - currentPlayer && this.pieces[squareName].name !== KING;
+    }
+    hasNeverMoved(squareName)
+    {
+        return !this.isEmpty(squareName) && this.pieces[squareName].moveCount === 0;
     }
     isMovable(squareName)
     {
@@ -117,6 +126,25 @@ export default class Board
         this.pieces[move.to] = this.pieces[move.from];
         this.pieces[move.to].moveCount++;
         this.pieces[move.from] = EMPTY;
+        let player;
+        switch (move.moveName)
+        {
+            case PROMOTION:
+                this.pieces[move.to].name = QUEEN;
+                break;
+            case EN_PASSANT:
+                break;
+            case CASTLING_KINGSIDE:
+                player = this.pieces[move.to].player;
+                this.pieces[CASTLING_KING_ROOK[player]] = this.pieces[KING_ROOK[player]];
+                this.pieces[KING_ROOK[player]] = EMPTY;
+                break;
+            case CASTLING_QUEENSIDE:
+                player = this.pieces[move.to].player;
+                this.pieces[CASTLING_QUEEN_ROOK[player]] = this.pieces[QUEEN_ROOK[player]];
+                this.pieces[QUEEN_ROOK[player]] = EMPTY;
+                break;
+        }
 
         this.moves.push(move);
     }
@@ -128,6 +156,14 @@ export default class Board
         this.pieces[move.from] = this.pieces[move.to];
         this.pieces[move.from].moveCount--;
         this.pieces[move.to] = move.capturedPiece;
+        switch (move.moveName)
+        {
+            case PROMOTION:
+                this.pieces[move.from].name = PAWN;
+                break;
+            case EN_PASSANT:
+                break;
+        }
     }
     resetLegalMoves()
     {
@@ -139,9 +175,9 @@ export default class Board
             }
         }
     }
-    isCheckedIfMoving(player, square, moveName = DEFAULT)
+    isCheckedIfMoving(player, from, to, moveName = DEFAULT)
     {
-        this.move(square, moveName);
+        this.move(from, to, moveName);
         let isChecked = this.isChecked(player);
         this.cancelLastMove();
 
@@ -167,9 +203,10 @@ export default class Board
                         /* Once */
                         if (square.moveOneSpace(space) && this.isEmpty(square.getName()))
                         {
-                            if (!this.isCheckedIfMoving(player, squareName, square.getName()))
+                            let moveName = square.x === PROMOTION_LINE[player] ? PROMOTION : DEFAULT
+                            if (!this.isCheckedIfMoving(player, squareName, square.getName(), moveName))
                             {
-                                this.recordLegalMove(squareName, square.getName());
+                                this.recordLegalMove(squareName, square.getName(), moveName);
                             }
 
                             /* Twice */
@@ -188,20 +225,21 @@ export default class Board
 
                         /* Testing diagonal capture */
                         let spaces = player === WHITE ? [UP_LEFT, UP_RIGHT] : [DOWN_LEFT, DOWN_RIGHT];
-                        spaces.forEach((space) => {
+                        for (const space of spaces)
+                        {
                             if (square.moveOneSpace(space) && this.isCapturable(square.getName(), player))
                             {
-                                if (!this.isCheckedIfMoving(player, squareName, square.getName()))
+                                let moveName = square.x === PROMOTION_LINE[player] ? PROMOTION : DEFAULT
+                                if (!this.isCheckedIfMoving(player, squareName, square.getName(), moveName))
                                 {
-                                    this.recordLegalMove(squareName, square.getName());
+                                    this.recordLegalMove(squareName, square.getName(), moveName);
                                 }
                             }
                             square.goToOrigin();
-                        });
+                        }
 
                         /* Testing en passant capture */
-                        let enPassantLine = player === WHITE ? WHITE_EN_PASSANT_LINE : BLACK_EN_PASSANT_LINE;
-                        if (square.x0 === enPassantLine)
+                        if (square.x0 === EN_PASSANT_LINE[player])
                         {
                             for (const space of [LEFT, RIGHT])
                             {
@@ -225,7 +263,8 @@ export default class Board
                     }
                     else if (piece.name === KNIGHT)
                     {
-                        KNIGHT_SPACES.forEach((space => {
+                        for (const space of KNIGHT_SPACES)
+                        {
                             if (square.moveOneSpace(space))
                             {
                                 if (this.isEmpty(square.getName()) || this.isCapturable(square.getName(), player))
@@ -237,11 +276,12 @@ export default class Board
                                 }
                             }
                             square.goToOrigin();
-                        })); 
+                        } 
                     }
                     else if (piece.name === KING)
                     {
-                        ROYALTY_SPACES.forEach((space => {
+                        for (const space of ROYALTY_SPACES)
+                        {
                             if (square.moveOneSpace(space))
                             {
                                 if (this.isEmpty(square.getName()) || this.isCapturable(square.getName(), player))
@@ -253,7 +293,35 @@ export default class Board
                                 }
                             }
                             square.goToOrigin();
-                        }));
+                        }
+
+                        /* Testing kingside castling */
+                        if (squareName === KING_SQUARE[player] && this.pieces[squareName].moveCount === 0 &&
+                            this.hasNeverMoved(KING_ROOK[player]) &&
+                            square.moveOneSpace(RIGHT) && this.isEmpty(square.getName()) &&
+                            !this.isCheckedIfMoving(player, squareName, square.getName()) &&
+                            square.moveOneSpace(RIGHT) && this.isEmpty(square.getName()) &&
+                            !this.isCheckedIfMoving(player, squareName, square.getName()))
+                        {
+                            // test if the king is checked
+                            this.recordLegalMove(squareName, square.getName(), CASTLING_KINGSIDE);
+                        }
+                        square.goToOrigin();
+
+                        /* Testing queenside castling */
+                        if (squareName === KING_SQUARE[player] && this.pieces[squareName].moveCount === 0 &&
+                            this.hasNeverMoved(QUEEN_ROOK[player]) &&
+                            square.moveOneSpace(LEFT) && this.isEmpty(square.getName()) &&
+                            !this.isCheckedIfMoving(player, squareName, square.getName()) &&
+                            square.moveOneSpace(LEFT) && this.isEmpty(square.getName()) &&
+                            !this.isCheckedIfMoving(player, squareName, square.getName()) &&
+                            square.moveOneSpace(LEFT) && this.isEmpty(square.getName()) &&
+                            square.moveOneSpace(RIGHT))
+                        {
+                            // test if the king is checked
+                            this.recordLegalMove(squareName, square.getName(), CASTLING_QUEENSIDE);
+                        }
+                        square.goToOrigin();
                     }
                     else
                     {
@@ -270,7 +338,8 @@ export default class Board
                                 spaces = ROYALTY_SPACES;
                                 break;
                         }
-                        spaces.forEach((space => {
+                        for (const space of spaces)
+                        {
                             while (square.moveOneSpace(space))
                             {
                                 if (this.isEmpty(square.getName()))
@@ -293,7 +362,7 @@ export default class Board
                                 }
                             }
                             square.goToOrigin();
-                        }));
+                        }
                     }
                 }            
             }

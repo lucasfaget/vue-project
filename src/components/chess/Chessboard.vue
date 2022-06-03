@@ -44,6 +44,7 @@
                 this.chessboard.move(this.currentMove.from, this.currentMove.to, this.chessboard.getMoveName(this.currentMove.from, this.currentMove.to));
                 this.currentMove.to = null;
                 this.chessboard.calculateAllMoves(this.currentPlayer);
+                console.log(this.chessboard);
             },
             isLegalSquare(square)
             {
