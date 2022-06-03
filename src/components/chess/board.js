@@ -133,6 +133,9 @@ export default class Board
                 this.pieces[move.to].name = QUEEN;
                 break;
             case EN_PASSANT:
+                let capturedPawnSquare = move.to[0] + move.from[1];
+                move.capturedPiece = this.pieces[capturedPawnSquare];
+                this.pieces[capturedPawnSquare] = EMPTY;
                 break;
             case CASTLING_KINGSIDE:
                 player = this.pieces[move.to].player;
@@ -155,14 +158,19 @@ export default class Board
         /* Update chessboard */
         this.pieces[move.from] = this.pieces[move.to];
         this.pieces[move.from].moveCount--;
-        this.pieces[move.to] = move.capturedPiece;
         switch (move.moveName)
         {
             case PROMOTION:
+                this.pieces[move.to] = move.capturedPiece;
                 this.pieces[move.from].name = PAWN;
                 break;
             case EN_PASSANT:
+                this.pieces[move.to] = EMPTY;
+                let capturedPawnSquare = move.to[0] + move.from[1];
+                this.pieces[capturedPawnSquare] = move.capturedPiece;
                 break;
+            default:
+                this.pieces[move.to] = move.capturedPiece;
         }
     }
     resetLegalMoves()
