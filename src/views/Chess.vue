@@ -1,19 +1,11 @@
 <script>
-    import Chessboard from '../components/chess/Chessboard.vue';
+    import Chessboard, { SPIN, FIRST, PREVIOUS, NEXT, LAST, BACK } from '../components/chess/Chessboard.vue';
     import ChessButton from '../components/chess/ChessButton.vue';
-
-    export const SPIN = 'spin';
-    export const FIRST = 'first';
-    export const PREVIOUS = 'previous';
-    export const NEXT = 'next';
-    export const LAST = 'last';
-    export const BACK = 'back';
 
     export default {
         components: { Chessboard, ChessButton },
         data() {
             return {
-                isSpun: false,
                 buttons: [
                     { buttonType: SPIN, tooltipText: "Spin chessboard" },
                     { buttonType: FIRST, tooltipText: "First move" },
@@ -30,18 +22,12 @@
                 {
                     case SPIN:
                         this.$refs.chessboard.spin();
-                        break;
-                    case FIRST:
-                        break;
-                    case PREVIOUS:
-                        break;
-                    case NEXT:
-                        break;
-                    case LAST:
                         break;  
                     case BACK:
                         this.$refs.chessboard.cancelLastMove();
                         break;
+                    default:
+                        this.$refs.chessboard.goToMove(buttonType);
                 }
             }
         }
